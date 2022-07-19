@@ -12,20 +12,22 @@ process prep_coregulation_model {
     tuple datasetID, decomposition from prep_coregulation_model_in
 
     output:
-    path 'coregulation*'
+    pth 'coregulation*'
     
     """
-    java -Xmx${params.mem_step2 -16}g -Xms${params.mem_step2 -16}g -XX:ParallelGCThreads=2 \
+    java -Xmx${params.mem_coreg -16}g -Xms${params.mem_coreg -16}g -XX:ParallelGCThreads=2 \
+    -jar $params.downstreamer \
     --mode CONVERT_TXT \
-    --gwas $decomposition
+    --gwas $decomposition \
     --output dummy
 
-    java -Xmx${params.mem_step2 -16}g -Xms${params.mem_step2 -16}g -XX:ParallelGCThreads=2 \
+    java -Xmx${params.mem_coreg -16}g -Xms${params.mem_coreg -16}g -XX:ParallelGCThreads=2 \
+    -jar $params.downstreamer \
     --mode CORRELATE_GENES \
     --gwas dummy \
     --corZscore \
     --normalizeEigenvectors \
-    --genes $params.reference_ensembl\
+    --genes $params.reference_ensembl \
     --output coregulation
     """
 

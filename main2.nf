@@ -1,36 +1,39 @@
 gwas = Channel
-                .fromPath(params.gwas_dir)
-                .map { x -> tuple(x.baseName) }
+    .fromPath(params.gwas_table)
+    .splitCsv(header:true)
+    .map{ row-> tuple(row.gwasID) }
+
 Channel
     .fromPath(params.coreg_table)
     .splitCsv(header:true)
-    .map{ row-> tuple(row.coreg_id, row.coregulation_model) }
+    .map{ row-> tuple(row.coreg_id) }
     .combine(gwas)
+//    .view()
     .set { downstreamer_step2_in }
 
 
 process downstreamer_step2 {
 
-    publishDir "$params.bundle_dir/step2/$coregID/$datasetID/", mode: 'copy', saveAs: { filename -> "$filename" }
+    publishDir "$params.bundle_dir_scratch/step2/$coregID/$datasetID/", mode: 'copy', saveAs: { filename -> "$filename" }
     
     input:
-    tuple coregID, coregulation_model, datasetID from downstreamer_step2_in
+    tuple coregID, datasetID from downstreamer_step2_in
 
     output:
     path ('ds_step2.log')
     path ('ds_step2_enrichtments.xlsx')
 
-    when:
-    params.step2 != "NOT_SPECIFIED"
+    //when:
+    //params.step2 != "NOT_SPECIFIED"
     
     """
         java -Xmx${params.mem_step2 -16}g -Xms${params.mem_step2 -16}g -XX:ParallelGCThreads=2 \
         -jar $params.downstreamer \
         --mode STEP2 \
-        --gwas $params.bundle_dir/summary_statistics/binary_matrix/$datasetID/pvalue \
+        --gwas $params.bundle_dir_scratch/summary_statistics/binary_matrix/$datasetID/pvalue \
         --referenceGenotypes $params.reference_genotypes \
         --stepOneOutput $params.bundle_dir_scratch/step1/$datasetID/ds_step1 \
-        --pathwayDatabase $coregID=$coregulation_model \
+        --pathwayDatabase $coregID=$params.bundle_dir_scratch/coreg_models/$coregID/coregulation \
         --genes $params.reference_ensembl \
         --genePruningR $params.gene_pruning \
         --geneCorrelationWindow $params.gene_cor_window \

@@ -1,13 +1,13 @@
 Channel
     .fromPath(params.gwas_links)
     .splitCsv(header:true)
-    .map{ row-> tuple(row.gwasID, row.link)}
+    .map{ row-> tuple(row.gwasID, row.ftp_link)}
     .set { download_gwas_in }
 
 
 process downstreamer_download_gwas {
 
-    publishDir "$params.bundle_dir/summary_statistics/text/", mode: 'copy', saveAs: { filename -> "${datasetID}.txt" }
+    publishDir "$params.bundle_dir_scratch/summary_statistics/text/", mode: 'copy', saveAs: { filename -> "${datasetID}.txt" }
     
     input:
     tuple datasetID, gwas_link from download_gwas_in
@@ -21,7 +21,7 @@ process downstreamer_download_gwas {
     gwas_id <- "$datasetID"
     library(data.table)
     m <- fread("dummy.gz")
-    n <- m[,.(hm_rsid,p_value)]
+    n <- m[,.(variant_id,p_value)]
     colnames(n) <- c(gwas_id,gwas_id)
     fwrite(n,"summary_statistics.txt",sep="\t")
     """
